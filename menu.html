@@ -1,0 +1,403 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เมนูสินค้า</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <h1>เมนูสินค้า</h1>
+    <nav>
+        <a href="index.html">หน้าแรก</a>
+        <a href="menu.html">เมนูสินค้า</a>
+        <a href="history.html">ประวัติการชำระเงิน</a>
+    </nav>
+</header>
+
+<div class="container">
+
+    <h2>เครื่องดื่มยอดนิยม</h2>
+
+    <div class="card">
+        <img src="7_ชาไทย1.jpg" alt="ชาไทย">
+        <h3>ชาไทย</h3>
+        <p>ชาไทยหอมเข้มข้น หวานกำลังดี</p>
+        <p class="price">ราคา 45 บาท</p>
+        <button onclick="addCart('ชาไทย',45)">เพิ่มลงตะกร้า</button>
+    </div>
+
+    <div class="card">
+        <img src="Chakai.jpg" alt="ชานมไข่มุก">
+        <h3>ชานมไข่มุก</h3>
+        <p>ชานมหอมมัน พร้อมไข่มุกหนึบหนับ</p>
+        <p class="price">ราคา 55 บาท</p>
+        <button onclick="addCart('ชานมไข่มุก',55)">เพิ่มลงตะกร้า</button>
+    </div>
+
+    <div class="card">
+        <img src="Matcha.jpg" alt="มัทฉะ">
+        <h3>มัทฉะลาเต้</h3>
+        <p>มัทฉะแท้จากญี่ปุ่น รสชาตินุ่มละมุน</p>
+        <p class="price">ราคา 60 บาท</p>
+        <button onclick="addCart('มัทฉะลาเต้',60)">เพิ่มลงตะกร้า</button>
+    </div>
+
+</div>
+
+<!-- ตะกร้าสินค้า -->
+<div class="cart">
+    <h2>🛒 ตะกร้าสินค้า</h2>
+
+    <div id="cartList">
+        ยังไม่มีสินค้า
+    </div>
+
+    <h3>รวมทั้งหมด: <span id="total">0</span> บาท</h3>
+
+    <button onclick="checkout()">ชำระเงิน</button>
+</div>
+
+<!-- หน้าชำระเงิน -->
+<div id="payment" class="payment" style="display:none;">
+
+    <h2>ชำระเงิน</h2>
+
+    <p>ยอดเงินที่ต้องชำระ</p>
+
+    <h1><span id="payTotal">0</span> บาท</h1>
+
+    <img src="qrcode.jpg" alt="QR Code รับเงิน">
+
+    <p>กรุณาสแกน QR Code เพื่อชำระเงิน</p>
+
+    <label>แนบสลิปการโอนเงิน</label>
+    <input type="file" id="slip" accept="image/*">
+
+    <br><br>
+
+    <button onclick="confirmPayment()">แจ้งชำระเงิน</button>
+
+</div>
+
+<!-- ประวัติการชำระเงิน -->
+<div class="history" id="history">
+
+    <h2>📋 ประวัติการชำระเงิน</h2>
+
+    <!-- ปุ่มลบประวัติทั้งหมด -->
+    <button class="delete-all" onclick="clearHistory()">
+        ลบประวัติทั้งหมด
+    </button>
+
+    <div id="historyList">
+        ยังไม่มีประวัติการชำระเงิน
+    </div>
+
+</div>
+
+<script>
+
+// ตะกร้าสินค้า
+let cart = [];
+
+// โหลดประวัติการชำระเงิน
+let paymentHistory = JSON.parse(
+    localStorage.getItem("paymentHistory") || "[]"
+);
+
+// เพิ่มสินค้า
+function addCart(name, price) {
+
+    let item = cart.find(p => p.name === name);
+
+    if (item) {
+        item.quantity++;
+    } else {
+        cart.push({
+            name: name,
+            price: price,
+            quantity: 1
+        });
+    }
+
+    showCart();
+}
+
+// แสดงตะกร้าสินค้า
+function showCart() {
+
+    let list = document.getElementById("cartList");
+    let total = 0;
+
+    list.innerHTML = "";
+
+    if (cart.length === 0) {
+        list.innerHTML = "ยังไม่มีสินค้า";
+    }
+
+    cart.forEach((item, index) => {
+
+        let sum = item.price * item.quantity;
+        total += sum;
+
+        let p = document.createElement("p");
+
+        p.textContent =
+            `${item.name} x ${item.quantity} = ${sum} บาท `;
+
+        let btn = document.createElement("button");
+
+        btn.textContent = "ลบ";
+        btn.onclick = () => removeItem(index);
+
+        p.appendChild(btn);
+        list.appendChild(p);
+    });
+
+    document.getElementById("total").innerText = total;
+}
+
+// ลบสินค้าในตะกร้า
+function removeItem(index) {
+
+    cart.splice(index, 1);
+    showCart();
+}
+
+// เปิดหน้าชำระเงิน
+function checkout() {
+
+    if (cart.length === 0) {
+        alert("กรุณาเลือกสินค้าก่อน");
+        return;
+    }
+
+    let total = cart.reduce(
+        (sum, item) => sum + item.price * item.quantity, 0
+    );
+
+    document.getElementById("payTotal").innerText = total;
+
+    document.getElementById("payment").style.display = "block";
+
+    document.getElementById("payment").scrollIntoView({
+        behavior: "smooth"
+    });
+}
+
+// ยืนยันการชำระเงิน
+function confirmPayment() {
+
+    let slip = document.getElementById("slip");
+
+    if (!slip.files.length) {
+        alert("กรุณาแนบสลิปการโอนเงิน");
+        return;
+    }
+
+    let file = slip.files[0];
+
+    if (!file.type.startsWith("image/")) {
+        alert("กรุณาเลือกไฟล์รูปภาพ");
+        return;
+    }
+
+    if (file.size > 1024 * 1024) {
+        alert("รูปสลิปต้องมีขนาดไม่เกิน 1 MB");
+        return;
+    }
+
+    let reader = new FileReader();
+
+    reader.onload = function(e) {
+
+        let total = cart.reduce(
+            (sum, item) => sum + item.price * item.quantity, 0
+        );
+
+        let order = {
+            id: Date.now(),
+            date: new Date().toLocaleString("th-TH"),
+            products: cart.map(item => ({...item})),
+            total: total,
+            status: "รอตรวจสอบ",
+            slip: e.target.result
+        };
+
+        paymentHistory.unshift(order);
+
+        try {
+
+            localStorage.setItem(
+                "paymentHistory",
+                JSON.stringify(paymentHistory)
+            );
+
+        } catch (error) {
+
+            paymentHistory.shift();
+
+            alert("พื้นที่จัดเก็บข้อมูลเต็ม กรุณาใช้รูปสลิปขนาดเล็กลง");
+            return;
+        }
+
+        alert("แจ้งชำระเงินเรียบร้อยแล้ว");
+
+        cart = [];
+        showCart();
+
+        document.getElementById("payment").style.display = "none";
+        document.getElementById("slip").value = "";
+
+        showHistory();
+
+    };
+
+    reader.readAsDataURL(file);
+}
+
+// แสดงประวัติการชำระเงิน
+function showHistory() {
+
+    let list = document.getElementById("historyList");
+
+    list.innerHTML = "";
+
+    if (paymentHistory.length === 0) {
+
+        list.innerHTML = "ยังไม่มีประวัติการชำระเงิน";
+        return;
+    }
+
+    paymentHistory.forEach(order => {
+
+        let card = document.createElement("div");
+        card.className = "history-item";
+
+        let title = document.createElement("h3");
+        title.textContent = "คำสั่งซื้อ #" + order.id;
+
+        let date = document.createElement("p");
+        date.textContent = "วันที่: " + order.date;
+
+        let products = document.createElement("p");
+
+        products.textContent = order.products.map(item =>
+            `${item.name} x ${item.quantity}`
+        ).join(", ");
+
+        let total = document.createElement("h3");
+        total.textContent = "ยอดรวม " + order.total + " บาท";
+
+        let status = document.createElement("span");
+        status.className = "status";
+        status.textContent = order.status;
+
+        let image = document.createElement("img");
+        image.src = order.slip;
+        image.alt = "สลิปการชำระเงิน";
+
+        // ปุ่มลบคำสั่งซื้อ
+        let deleteBtn = document.createElement("button");
+
+        deleteBtn.textContent = "ลบคำสั่งซื้อ";
+        deleteBtn.className = "delete-btn";
+
+        deleteBtn.onclick = function() {
+            deleteOrder(order.id);
+        };
+
+        card.appendChild(title);
+        card.appendChild(date);
+        card.appendChild(products);
+        card.appendChild(total);
+        card.appendChild(status);
+        card.appendChild(image);
+        card.appendChild(deleteBtn);
+
+        list.appendChild(card);
+
+    });
+}
+
+// ลบคำสั่งซื้อทีละรายการ
+function deleteOrder(id) {
+
+    if (!confirm("คุณต้องการลบคำสั่งซื้อนี้หรือไม่?")) {
+        return;
+    }
+
+    let oldHistory = paymentHistory;
+
+    paymentHistory = paymentHistory.filter(
+        order => order.id !== id
+    );
+
+    try {
+
+        localStorage.setItem(
+            "paymentHistory",
+            JSON.stringify(paymentHistory)
+        );
+
+        showHistory();
+
+        alert("ลบคำสั่งซื้อเรียบร้อยแล้ว");
+
+    } catch (error) {
+
+        paymentHistory = oldHistory;
+
+        alert("ไม่สามารถลบข้อมูลได้");
+
+    }
+}
+
+// ลบประวัติทั้งหมด
+function clearHistory() {
+
+    if (paymentHistory.length === 0) {
+        alert("ไม่มีประวัติการชำระเงินให้ลบ");
+        return;
+    }
+
+    if (!confirm("คุณต้องการลบประวัติการชำระเงินทั้งหมดหรือไม่?")) {
+        return;
+    }
+
+    let oldHistory = paymentHistory;
+
+    paymentHistory = [];
+
+    try {
+
+        localStorage.setItem(
+            "paymentHistory",
+            JSON.stringify(paymentHistory)
+        );
+
+        showHistory();
+
+        alert("ลบประวัติทั้งหมดเรียบร้อยแล้ว");
+
+    } catch (error) {
+
+        paymentHistory = oldHistory;
+
+        alert("ไม่สามารถลบประวัติได้");
+
+    }
+}
+
+// เริ่มต้นเว็บไซต์
+showCart();
+showHistory();
+
+</script>
+
+</body>
+</html>
